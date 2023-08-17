@@ -8,10 +8,11 @@ app.use(express.json());
 
 // Import routes
 const companiesRoutes = require("./routes/companies");
-// const invoicesRoutes = require("./routes/invoices");
+const invoicesRoutes = require("./routes/invoices");
 
 // Add routes
 app.use("/companies", companiesRoutes);
+app.use("/invoices", invoicesRoutes);
 /** 404 handler */
 
 app.use(function(req, res, next) {
