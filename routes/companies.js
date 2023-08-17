@@ -34,5 +34,21 @@ router.get("/:code", async (req, res, next) => {
 	}
 });
 
+router.post("/", async (req, res, next) => {
+    try {
+        const { code, name, description } = req.body;
+        if (!code || !name || !description) {
+            throw new ExpressError("Code, name, and description required", 400);
+        }
+        const results = await db.query(
+            `INSERT INTO companies (code, name, description) VALUES ($1, $2, $3) RETURNING code, name, description`,
+            [code, name, description]
+        );
+        return res.status(201).json({ company: results.rows[0] });
+    } catch (error) {
+        return next(error);
+    }
+});
+
 // Make sure to export
 module.exports = router;
