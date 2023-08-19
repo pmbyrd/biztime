@@ -113,5 +113,37 @@ router.delete("/:code", async (req, res, next) => {
 	}
 });
 
+// DOEST NOT WORK error 500 involving invoices
+router.get("/industries", async (req, res, next) => {
+    try {
+        const results = await db.query(`
+            SELECT i.code AS industry_code, i.type AS industry_type, array_agg(ci.comp_code) AS company_codes
+            FROM industries i
+            LEFT JOIN company_industries ci ON i.code = ci.ind_code
+            GROUP BY i.code, i.type
+        `);
+        const industries = results.rows;
+        return res.json({ industries });
+    } catch (error) {
+        return next(error);
+    }
+});
+
+// Make a route to add an industry
+router.post("/industries", async (req, res, next) => {
+	try {
+		const {code, type} = req.body;
+		if (!code || !type) {
+			throw new ExpressError("Code and type required", 400);
+		}
+		const results = await db.query(
+			`INSERT INTO industries (code, type) VALUES ($1, $2) RETURNING code, type`,
+			[code, type]
+		);
+		return res.status(201).json({ industry: results.rows[0] });
+	} catch (error) {
+		return next(error);
+	}
+});
 // Make sure to export
 module.exports = router;
