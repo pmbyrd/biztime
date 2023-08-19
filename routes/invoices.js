@@ -1,6 +1,7 @@
 const ExpressError = require("../expressError");
 const db = require("../db");
 const express = require("express");
+const e = require("express");
 const router = new express.Router();
 
 // Routes
@@ -51,15 +52,25 @@ router.post("/", async (req, res, next) => {
 router.put("/:id", async (req, res, next) => {
     try {
         const id = req.params.id;
-        const { amt } = req.body;
-        if (!id || !amt) {
-            throw new ExpressError("Invoice id and amount required", 400);
+        const { amt, paid } = req.body;
+        if (!amt || paid === undefined) {
+            throw new ExpressError("Amount and paid status are required", 400);
+        }
+        let paid_date = null;
+        if (paid === true && paid_date === null) {
+            paid_date = new Date().toISOString();
+        }
+        else if (paid === false) {
+            paid_date = null;
         }
         const results = await db.query(
-            `UPDATE invoices SET amt=$1 WHERE id=$2 RETURNING id, comp_code, amt, paid, add_date, paid_date`,
-            [amt, id]
+            `UPDATE invoices 
+             SET amt=$1, paid=$2, paid_date=$3 
+             WHERE id=$4 
+             RETURNING id, comp_code, amt, paid, add_date, paid_date`,
+            [amt, paid, paid_date, id]
         );
-        if (!results.rows.length) {
+        if (results.rows.length === 0) {
             throw new ExpressError(`No invoice found with id: ${id}`, 404);
         }
         return res.json({ invoice: results.rows[0] });

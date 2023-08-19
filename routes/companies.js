@@ -3,11 +3,19 @@ const ExpressError = require("../expressError");
 const db = require("../db");
 const express = require("express");
 const router = new express.Router();
+const slugify = require("slugify");
 
 // Routes
 router.get("/", async (req, res, next) => {
 	try {
-		const results = await db.query(`SELECT code, name FROM companies`);
+		// See all industries that the company is in
+		const results = await db.query(`
+			SELECT c.code AS company_code, c.name AS company_name, c.description AS company_description,
+			i.code AS industry_code, i.type AS industry_type
+ 			FROM companies c
+ 			JOIN company_industries ci ON c.code = ci.comp_code
+ 			JOIN industries i ON ci.ind_code = i.code
+			`);
 		return res.json({ companies: results.rows });
 	} catch (error) {
 		return next(error);
@@ -44,8 +52,14 @@ router.get("/:code", async (req, res, next) => {
 });
 
 router.post("/", async (req, res, next) => {
+	//slugify the code to be no more that 3 letters and all lowercase
 	try {
-		const { code, name, description } = req.body;
+		let { code, name, description } = req.body;
+		code = slugify(req.body.name, {
+			lower: true,
+			remove: /[*+~.()'"!:@]/g,
+			toLowercase: true,
+		});
 		if (!code || !name || !description) {
 			throw new ExpressError("Code, name, and description required", 400);
 		}
